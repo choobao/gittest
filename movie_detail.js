@@ -41,7 +41,7 @@ const createDetailCard = (movie, container) => {
 };
 
 // 리뷰 카드 만들기
-const createReviewCard = (review, container) => {
+const createReviewCard = (review, idx, container) => {
   const reviewCard = document.createElement("div");
   reviewCard.className = "reviewCard";
 
@@ -54,10 +54,21 @@ const createReviewCard = (review, container) => {
   reviewContent.textContent = review.userReview;
 
   // 수정 버튼
+  const editBtn = document.createElement("button");
+  editBtn.className = "editBtn";
+  editBtn.textContent = "수정";
+  editBtn.addEventListener("click", () => editReview(idx));
+
   // 삭제 버튼
+  const deleteBtn = document.createElement("button");
+  deleteBtn.className = "deleteBtn";
+  deleteBtn.textContent = "삭제";
+  deleteBtn.addEventListener("click", () => deleteReview(idx));
 
   reviewCard.appendChild(reviewUserName);
   reviewCard.appendChild(reviewContent);
+  reviewCard.appendChild(editBtn);
+  reviewCard.appendChild(deleteBtn);
 
   container.appendChild(reviewCard);
 };
@@ -81,7 +92,9 @@ const fetchMovieDetails = async () => {
   const movieId = getMovieId();
 
   try {
-    const res = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${API_KEY}`);
+    const res = await fetch(
+      `https://api.themoviedb.org/3/movie/${movieId}?api_key=${API_KEY}`
+    );
     const movie = await res.json();
     createDetailCard(movie, $movieDetailContainer);
   } catch (err) {
@@ -96,18 +109,16 @@ const displayReviewList = () => {
   $reviewContainer.innerHTML = ""; // 안의 내용 지우기
 
   const movieId = getMovieId();
-  console.log(movieId);
 
   const reviewList = JSON.parse(localStorage.getItem(movieId));
-  console.log(reviewList);
 
   if (reviewList === null) {
     $reviewContainer.textContent = "NO REVIEWS YET";
     return;
   }
-
-  reviewList.forEach((review) => {
-    createReviewCard(review, $reviewContainer);
+  // 배열이니까 idx가 존재함 -> 그걸 갖다 쓰자!
+  reviewList.forEach((review, idx) => {
+    createReviewCard(review, idx, $reviewContainer);
   });
 };
 
@@ -122,12 +133,10 @@ const saveReview = (event) => {
   if (userName === null || userName.trim() === "") {
     alert("잘못된 닉네임 입력입니다.");
     return;
-  }
-  if (userReview === null || userReview.trim() === "") {
+  } else if (userReview === null || userReview.trim() === "") {
     alert("리뷰가 입력되지 않았습니다.");
     return;
-  }
-  if (userPassword === null || userPassword.trim() === "") {
+  } else if (userPassword === null || userPassword.trim() === "") {
     alert("잘못된 비밀번호 입력입니다.");
     return;
   }
@@ -146,8 +155,47 @@ const saveReview = (event) => {
 
   // 화면 새로고침
   window.location.reload();
+
   // 리뷰 리스트 다시 보여주기
   displayReviewList();
+};
+
+// 수정 버튼을 누르면
+const editReview = (idx) => {
+  const movieId = getMovieId();
+  const reviewList = JSON.parse(localStorage.getItem(movieId));
+  const review = reviewList[idx];
+
+  const password = prompt("비밀번호를 입력하세요.");
+  if (password !== review.userPassword) {
+    alert("잘못된 비밀번호입니다!!!");
+  } else {
+    const reviewContent = prompt("리뷰를 수정하세요~~", review.userReview);
+    // 유효성 검사 -> 수정한 내용이 없거나 공백인지 검사
+    if (reviewContent !== null && reviewContent.trim() !== "") {
+      review.userReview = reviewContent; // update!
+      localStorage.setItem(movieId, JSON.stringify(reviewList));
+      displayReviewList(); // 업데이트된 리뷰 리스트 보여주기
+    } else {
+      alert("잘못된 입력입니다.");
+    }
+  }
+};
+
+// 삭제
+const deleteReview = (idx) => {
+  const movieId = getMovieId();
+  const reviewList = JSON.parse(localStorage.getItem(movieId));
+  const review = reviewList[idx];
+
+  const password = prompt("비밀번호를 입력하세요.");
+  if (password !== review.userPassword) {
+    alert("잘못된 비밀번호입니다!!!");
+  } else {
+    reviewList.splice(idx, 1); // idx부터 1개 요소 자르기
+    localStorage.setItem(movieId, JSON.stringify(reviewList));
+    displayReviewList();
+  }
 };
 
 // init 함수 -> DOM TREE 로드되면 할 작업
@@ -163,6 +211,9 @@ const init = async () => {
 // 로드가 완료되면 전체 함수 진입
 document.addEventListener("DOMContentLoaded", async function () {
   // 저장 버튼 클릭하면 리뷰 저장
-  document.getElementById("saveReviewBtn").addEventListener("click", saveReview);
+  document
+    .getElementById("saveReviewBtn")
+    .addEventListener("click", saveReview);
+
   await init();
 });
