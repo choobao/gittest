@@ -1,29 +1,40 @@
-//localStorage에 키 밸류 저장
-const userNickName = document.getElementById("nickName");
-const userPassWord = document.getElementById("passWord");
-const userSubmit = document.getElementById("submit");
-const userReview = document.getElementById("review");
+import { options } from "./apikey.js";
+const url =
+  "https://api.themoviedb.org/3/movie/top_rated?language=en-US&page=1";
 
-userSubmit.addEventListener("click", () => {
-  // 기존 사용자 정보 가져오기
-  let usersInfo = JSON.parse(localStorage.getItem("usersInfo")) || [];
+fetch(url, options)
+  .then((response) => response.json())
+  .then((data) => {
+    const movieId = data.results.map((movie) => movie.id);
 
-  // 새로운 사용자 정보 추가
-  let newUserInfo = {
-    nickname: userNickName.value,
-    passWord: userPassWord.value,
-    review: userReview.value,
-  };
+    const userNickName = document.getElementById("nickName");
+    const userPassWord = document.getElementById("passWord");
+    const userSubmit = document.getElementById("submit");
+    const userReview = document.getElementById("review");
 
-  // 기존 사용자 정보에 새로운 사용자 정보 추가
-  usersInfo.push(newUserInfo);
+    userSubmit.addEventListener("click", () => {
+      const firstMovieId = movieId[0];
 
-  //사용자 정보 문자열로 변환
-  localStorage.setItem("usersInfo", JSON.stringify(usersInfo));
+      let usersInfo =
+        JSON.parse(localStorage.getItem(`usersInfo-${firstMovieId}`)) || [];
 
-  //새로고침
-  location.reload();
-});
+      let newUserInfo = {
+        nickname: userNickName.value,
+        passWord: userPassWord.value,
+        review: userReview.value,
+      };
+
+      usersInfo.push(newUserInfo);
+
+      localStorage.setItem(
+        `usersInfo-${firstMovieId}`,
+        JSON.stringify(usersInfo)
+      );
+
+      location.reload();
+    });
+  });
+
 //form태그로 인한 새로고침을 막고 alert창 띄우기
 searchForm.addEventListener("submit", (e) => {
   e.preventDefault();
